@@ -1,5 +1,5 @@
--ifndef(KINETIC_HRL). 
--define(KINETIC_HRL, true). 
+-ifndef(KINETIC_HRL).
+-define(KINETIC_HRL, true).
 
 -define(EXPIRATION_REFRESH, 120).
 -define(KINETIC_DATA, kinetic_data).
@@ -21,7 +21,7 @@
 -record(kinetic_arguments, {
     region :: undefined | string(),
     date :: undefined | string(),
-    host :: undefined | string(), 
+    host :: undefined | string(),
     url :: undefined | string(),
     lhttpc_opts = [] :: [any()],
     timeout :: undefined | pos_integer(),
@@ -40,6 +40,10 @@
         flush_tref :: undefined | term(),
         retries=3 :: pos_integer()
 }).
+
+-ifndef(KINETIC_DELIMITER).
+-define(KINETIC_DELIMITER, $\n).
+-endif.
 
 
 -endif.

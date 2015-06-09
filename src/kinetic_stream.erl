@@ -66,18 +66,18 @@ init([StreamName, {BasePartitionName, PartitionsNumber, Retries, Timeout, FlushI
     end.
 
 
-% buffer + Data is bigger than (or equal to) ?KINESIS_MAX_PUT_SIZE
-% buffer + Data is not bigger than ?KINESIS_MAX_PUT_SIZE
-handle_call({put_record, Data, DataSize}, _From,
-            State=#kinetic_stream{buffer_size=BSize})
-        when BSize + DataSize > ?KINESIS_MAX_PUT_SIZE ->
-    NewState = internal_flush(State),
-    {reply, ok, reset_timer(NewState#kinetic_stream{buffer_size=DataSize, buffer=Data})};
 handle_call({put_record, Data, DataSize}, _From,
             State=#kinetic_stream{buffer=Buffer, buffer_size=BSize}) ->
-    {reply, ok, reset_timer(State#kinetic_stream{
-                buffer= <<Buffer/binary, Data/binary>>,
-                buffer_size=BSize+DataSize})};
+    {Buffer2, BSize2} = append_buffer(Data, DataSize, Buffer, BSize),
+    if
+        % buffer + Data is bigger than (or equal to) ?KINESIS_MAX_PUT_SIZE
+        BSize2 >= ?KINESIS_MAX_PUT_SIZE ->
+            NewState = internal_flush(State),
+            {reply, ok, reset_timer(NewState#kinetic_stream{buffer_size = DataSize, buffer = Data})};
+        % buffer + Data is not bigger than ?KINESIS_MAX_PUT_SIZE
+        true ->
+            {reply, ok, reset_timer(State#kinetic_stream{buffer= Buffer2, buffer_size=BSize2})}
+    end;
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State}.
 
@@ -119,6 +119,15 @@ get_stream(StreamName, Config) ->
                     get_stream(StreamName, Config)
             end
     end.
+
+append_buffer(Data, DataSize, <<>>, 0) ->
+    {Data, DataSize};
+append_buffer(Data, DataSize, Buffer, BufferSize) ->
+    Delimiter = <<?KINETIC_DELIMITER>>,
+    DelimiterSize = byte_size(Delimiter),
+    Buffer2 = <<Buffer/binary, Delimiter/binary, Data/binary>>,
+    BufferSize2 = BufferSize + DataSize + DelimiterSize,
+    {Buffer2, BufferSize2}.
 
 internal_flush(State=#kinetic_stream{buffer= <<"">>}) ->
     State;
