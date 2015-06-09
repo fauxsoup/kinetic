@@ -30,7 +30,7 @@ init(Opts) ->
 
     KineticStreamSup = {kinetic_stream_sup,
                         {kinetic_stream_sup, start_link, []},
-                        permanent, 10000, supervisor, dynamic},
+                        permanent, 10000, supervisor, [kinetic_stream_sup]},
 
     {ok, {{one_for_one, 10, 1}, [KineticConfig, KineticStreamSup]}}.
 
