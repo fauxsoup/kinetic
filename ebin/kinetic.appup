@@ -1,0 +1,28 @@
+{"1.0.1", [
+        {"1", [
+                {apply, {supervisor, terminate_child, [kinetic_sup, kinetic_stream_sup]}},
+                {apply, {supervisor, delete_child, [kinetic_sup, kinetic_stream_sup]}},
+                {update, kinetic_sup, supervisor},
+                {apply, {supervisor, restart_child, [kinetic_sup, kinetic_stream_sup]}},
+                {update, kinetic},
+                {update, kinetic_iam},
+                {update, kinetic_config},
+                {update, kinetic_aws},
+                {update, kinetic_stream_sup},
+                {update, kinetic_stream}
+            ]}
+    ],
+    [
+        {"1", [
+                {update, kinetic},
+                {update, kinetic_iam},
+                {update, kinetic_config},
+                {update, kinetic_aws},
+                {update, kinetic_stream_sup},
+                {update, kinetic_stream},
+                {apply, {supervisor, terminate_child, [kinetic_sup, kinetic_stream_sup]}},
+                {apply, {supervisor, delete_child, [kinetic_sup, kinetic_stream_sup]}},
+                {update, kinetic_sup, supervisor},
+                {apply, {supervisor, restart_child, [kinetic_sup, kinetic_stream_sup]}}
+            ]}
+    ]}.
