@@ -2,7 +2,7 @@
 deps
 *.o
 *.beam
+*.app
 *.plt
 erl_crash.dump
-ebin
 production.config
