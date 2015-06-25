@@ -23,7 +23,8 @@
         buffer_size                 = 0 :: pos_integer(),
         current_partition_num       = 0 :: pos_integer(),
         flush_interval              = 1000 :: pos_integer(),
-        retries                     = 3 :: pos_integer()
+        retries                     = 3 :: pos_integer(),
+        compress                    = false :: boolean()
     }).
 
 start_link(StreamName, Config) ->
@@ -68,7 +69,9 @@ build_stream({timeout, Timeout}, KS) when is_integer(Timeout), Timeout >= 0 ->
 build_stream({flush_interval, FlushInterval}, KS) when is_integer(FlushInterval), FlushInterval >= 0 ->
     KS#kinetic_stream{flush_interval = FlushInterval};
 build_stream({retries, Retries}, KS) when is_integer(Retries), Retries >= 0 ->
-    KS#kinetic_stream{retries = Retries}.
+    KS#kinetic_stream{retries = Retries};
+build_stream({compress, Compress}, KS) when is_boolean(Compress) ->
+    KS#kinetic_stream{compress = Compress}.
 
 handle_call(stop, _From, State) ->
     {stop, normal, ok, State}.
@@ -127,9 +130,14 @@ internal_flush(State=#kinetic_stream{buffer= <<"">>}) ->
 internal_flush(State=#kinetic_stream{stream_name=StreamName,
                                      buffer=Buffer,
                                      timeout=Timeout,
-                                     retries=Retries}) ->
+                                     retries=Retries,
+                                     compress=Compress}) ->
     PartitionKey = partition_key(State),
-    spawn(fun() -> send_to_kinesis(StreamName, Buffer, PartitionKey, Timeout, Retries, 0) end),
+    Buffer2 = case Compress of
+        true    -> zlib:gzip(Buffer);
+        false   -> Buffer
+    end,
+    spawn(fun() -> send_to_kinesis(StreamName, Buffer2, PartitionKey, Timeout, Retries, 0) end),
     increment_partition_num(State#kinetic_stream{buffer= <<"">>, buffer_size=0}).
 
 increment_partition_num(State=#kinetic_stream{current_partition_num=Number,
