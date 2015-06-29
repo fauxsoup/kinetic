@@ -35,14 +35,14 @@ stop(StreamName, Config) ->
     gen_server:call(Stream, stop).
 
 
-put_record(StreamName, Config, Data) ->
+put_record(StreamName, Data, Config) ->
     DataSize = erlang:size(Data),
     case DataSize > ?KINESIS_MAX_PUT_SIZE of
         true ->
             {error, max_size_exceeded};
         false ->
             Stream = get_stream(StreamName, Config),
-            gen_server:cast(Stream, {put_record, Data, DataSize}, infinity)
+            gen_server:cast(Stream, {put_record, Data, DataSize})
     end.
 
 flush(StreamName, Config) ->
@@ -82,10 +82,10 @@ handle_cast({put_record, Data, DataSize}, State=#kinetic_stream{buffer=Buffer, b
         % buffer + Data is bigger than (or equal to) ?KINESIS_MAX_PUT_SIZE
         BSize2 >= ?KINESIS_MAX_PUT_SIZE ->
             NewState = internal_flush(State),
-            {reply, ok, NewState#kinetic_stream{buffer_size = DataSize, buffer = Data}, NewState#kinetic_stream.flush_interval};
+            {noreply, NewState#kinetic_stream{buffer_size = DataSize, buffer = Data}, NewState#kinetic_stream.flush_interval};
         % buffer + Data is not bigger than ?KINESIS_MAX_PUT_SIZE
         true ->
-            {reply, ok, State#kinetic_stream{buffer= Buffer2, buffer_size=BSize2}, State#kinetic_stream.flush_interval}
+            {noreply, State#kinetic_stream{buffer= Buffer2, buffer_size=BSize2}, State#kinetic_stream.flush_interval}
     end.
 
 terminate(_Reason, #kinetic_stream{stream_name=StreamName}) ->
@@ -164,7 +164,6 @@ send_to_kinesis(StreamName, Buffer, PartitionKey, Timeout, MaxRetries, Retry) ->
                 <<"ProvisionedThroughputExceededException">> ->
                     timer:sleep(math:pow(2, Retry + 1) * 1000), % not really exponential
                     send_to_kinesis(StreamName, Buffer, PartitionKey, Timeout, MaxRetries, Retry + 1);
-
                 Type ->
                     error({unhandled, Type, [StreamName, Code, Headers, RawBody]})
             end
