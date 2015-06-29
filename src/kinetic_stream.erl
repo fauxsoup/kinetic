@@ -92,8 +92,36 @@ terminate(_Reason, #kinetic_stream{stream_name=StreamName}) ->
     ets:delete(?MODULE, StreamName),
     ok.
 
-code_change(_OldVsn, State, _Extra) ->
-    State.
+code_change({down, _OldVsn}, #kinetic_stream{
+        stream_name                 = StreamName,
+        base_partition_name         = PartitionName,
+        partitions_number           = PartitionCount,
+        timeout                     = Timeout,
+        buffer                      = Buffer,
+        buffer_size                 = BufferSize,
+        current_partition_num       = CurrentPart,
+        flush_interval              = FlushInterval,
+        retries                     = Retries,
+        compress                    = false
+    }, _Extra) ->
+    {ok, FlushRef} = timer:send_after(FlushInterval, self(), flush),
+    State = {kinetic_stream, StreamName, PartitionName, PartitionCount, Timeout, Buffer, BufferSize, CurrentPart, FlushInterval, FlushRef, Retries},
+    {ok, State};
+code_change(_OldVsn, {kinetic_stream, StreamName, PartitionName, PartitionCount, Timeout, Buffer, BufferSize, CurrentPart, FlushInterval, FlushRef, Retries}, _Extra) ->
+    timer:cancel(FlushRef),
+    State = #kinetic_stream{
+        stream_name                 = StreamName,
+        base_partition_name         = PartitionName,
+        partitions_number           = PartitionCount,
+        timeout                     = Timeout,
+        buffer                      = Buffer,
+        buffer_size                 = BufferSize,
+        current_partition_num       = CurrentPart,
+        flush_interval              = FlushInterval,
+        retries                     = Retries,
+        compress                    = false
+    },
+    {ok, State}.
 
 handle_info(timeout, State) ->
     NewState = internal_flush(State),
