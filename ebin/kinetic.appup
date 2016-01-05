@@ -1,22 +1,8 @@
-{"1.1.0", [
-        {"1.0.1", [
-                {update, kinetic},
-                {update, kinetic_sup},
-                {update, kinetic_iam},
-                {update, kinetic_config},
-                {update, kinetic_aws},
-                {update, kinetic_stream_sup},
-                {update, kinetic_stream, {advanced, []}}
+{"1.1.1", [
+        {"1.1.0", [
             ]}
     ],
     [
-        {"1.0.1", [
-                {update, kinetic},
-                {update, kinetic_sup},
-                {update, kinetic_iam},
-                {update, kinetic_config},
-                {update, kinetic_aws},
-                {update, kinetic_stream_sup},
-                {update, kinetic_stream, {advanced, []}}
+        {"1.1.0", [
             ]}
     ]}.
